@@ -1,0 +1,31 @@
+# config.py
+"""
+Centralized Configuration Settings for SmartScan EW Engine.
+"""
+
+# --- Spectrum Environment Config ---
+DEFAULT_NUM_BANDS = 10
+DEFAULT_TIME_SLOTS = 200
+DEFAULT_SEED = 42
+
+# --- RF Physical Layer Settings ---
+DEFAULT_NOISE_FLOOR_DBM = -100.0
+DEFAULT_DETECTION_THRESHOLD_DBM = -85.0
+DEFAULT_EMITTER_DISTANCE_KM = 15.0
+
+# --- Advanced AI Engine (D3QN + LSTM + PER) ---
+LEARNING_RATE = 0.001
+GAMMA = 0.95
+EPSILON_START = 1.0
+EPSILON_MIN = 0.05
+EPSILON_DECAY = 0.985
+MEMORY_CAPACITY = 5000
+PER_ALPHA = 0.6
+PER_BETA_START = 0.4
+SEQ_LEN = 5
+SWITCH_PENALTY = 0.25
+
+# --- Tactical UI Theme Colors ---
+COLOR_ACCENT = "#00FFCC"
+COLOR_DANGER = "#FF3366"
+COLOR_BG = "#080a0f"
