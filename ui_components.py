@@ -1,191 +1,230 @@
 # ui_components.py
 import streamlit as st
-import numpy as np
 import plotly.graph_objects as go
+import numpy as np
 
 def inject_tactical_css():
-    """Injects custom CSS to give Streamlit a military command console aesthetic."""
+    """Injects a clean, professional engineering dark theme."""
     st.markdown("""
         <style>
+        /* Base Layout & Clean Dark Background */
         .stApp {
-            background-color: #080a0f;
-            color: #00ffcc;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: #0e1117;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
+        
+        /* Clean Header Bar */
+        .main-header {
+            padding: 1rem 0rem 1.5rem 0rem;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 1.5rem;
+        }
+        .main-header h1 {
+            color: #f8fafc;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+        .main-header p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Metric Cards */
+        div[data-testid="stMetric"] {
+            background-color: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 6px;
+            padding: 12px 16px;
+        }
+        div[data-testid="stMetricLabel"] {
+            color: #8b949e !important;
+            font-size: 0.8rem !important;
+            font-weight: 500 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        div[data-testid="stMetricValue"] {
+            color: #f0f6fc !important;
+            font-size: 1.5rem !important;
+            font-weight: 600 !important;
+        }
+
+        /* Tabs Styling */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 8px;
+            border-bottom: 1px solid #21262d;
+        }
+        .stTabs [data-baseweb="tab"] {
+            height: 40px;
+            white-space: pre;
+            background-color: transparent;
+            border-radius: 4px 4px 0px 0px;
+            color: #8b949e;
+            font-size: 0.88rem;
+            font-weight: 500;
+            padding: 0px 16px;
+        }
+        .stTabs [aria-selected="true"] {
+            background-color: #161b22 !important;
+            color: #58a6ff !important;
+            border-bottom: 2px solid #58a6ff !important;
+        }
+
+        /* Clean Card Boxes */
+        .info-card {
+            background-color: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 6px;
+            padding: 14px 18px;
+            margin-bottom: 1rem;
+        }
+        .info-card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+        .info-card-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        /* Buttons */
+        .stButton>button {
+            width: 100%;
+            background-color: #238636;
+            color: #ffffff;
+            border: 1px solid rgba(240,246,252,0.1);
+            border-radius: 6px;
+            font-weight: 500;
+            padding: 6px 16px;
+            transition: background-color 0.15s ease;
+        }
+        .stButton>button:hover {
+            background-color: #2ea043;
+            border-color: rgba(240,246,252,0.2);
+            color: #ffffff;
+        }
+
+        /* Sidebar Styling */
         section[data-testid="stSidebar"] {
             background-color: #0d1117;
-            border-right: 1px solid #1f293d;
+            border-right: 1px solid #21262d;
         }
-        .tactical-card {
-            background-color: #0d131d;
-            border: 1px solid #00ffcc;
-            border-radius: 4px;
-            padding: 12px;
-            margin-bottom: 10px;
-            box-shadow: 0 0 10px rgba(0, 255, 204, 0.15);
-        }
-        .tactical-title {
-            color: #00ffcc;
-            font-size: 0.85rem;
-            font-weight: bold;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-        .tactical-value {
-            color: #ffffff;
-            font-size: 1.4rem;
-            font-weight: bold;
-            margin-top: 4px;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-        .badge-radar { background-color: #ff3366; color: #fff; }
-        .badge-fhss { background-color: #00ccff; color: #000; }
-        .badge-burst { background-color: #ffcc00; color: #000; }
-        .badge-jammer { background-color: #ff0000; color: #fff; }
-        .badge-unknown { background-color: #555555; color: #fff; }
         </style>
     """, unsafe_allow_html=True)
 
 
-def plot_waterfall_spectrogram(env_power_grid, history, current_t, num_bands):
-    """Renders a 2D Waterfall Spectrogram with receiver scan overlay."""
-    active_power = env_power_grid[:current_t + 1, :num_bands]
-    
-    times = [entry['time'] for entry in history]
-    bands = [entry['band'] for entry in history]
-    results = [entry['result'] for entry in history]
-
-    hit_times = [t for t, r in zip(times, results) if r == 1]
-    hit_bands = [b for b, r in zip(times, results) if r == 1]
-
+def plot_waterfall_spectrogram(power_grid_dbm, scan_history, current_time, num_bands):
+    """Renders a clean 2D Spectrogram with receiver scan path overlay."""
     fig = go.Figure()
 
+    # Power Spectral Density Heatmap
     fig.add_trace(go.Heatmap(
-        z=active_power.T,
-        x=list(range(current_t + 1)),
-        y=[f"B{b+1}" for b in range(num_bands)],
-        colorscale='Viridis',
-        colorbar=dict(title="PSD (dBm)", len=0.8),
-        showscale=True,
-        name='Power Spectrum'
+        z=power_grid_dbm[:current_time+1, :].T,
+        x=list(range(current_time + 1)),
+        y=[f"B{i+1}" for i in range(num_bands)],
+        colorscale="Viridis",
+        colorbar=dict(title="PSD (dBm)", thickness=12, len=0.9),
+        showscale=True
     ))
 
-    fig.add_trace(go.Scatter(
-        x=times,
-        y=[f"B{b+1}" for b in bands],
-        mode='lines+markers',
-        line=dict(color='#00FFCC', width=2),
-        marker=dict(size=4, color='#00FFCC'),
-        name='Receiver Track'
-    ))
+    # Overlay Receiver Path
+    if scan_history:
+        times = [record['time'] for record in scan_history]
+        bands = [f"B{record['band']+1}" for record in scan_history]
+        results = [record['result'] for record in scan_history]
 
-    if hit_times:
         fig.add_trace(go.Scatter(
-            x=hit_times,
-            y=[f"B{b+1}" for b in hit_bands],
-            mode='markers',
-            marker=dict(symbol='star', size=12, color='#FFD700', line=dict(color='#FFFFFF', width=1)),
-            name='Intercepted Hits'
+            x=times,
+            y=bands,
+            mode='lines+markers',
+            name='Receiver Tune',
+            line=dict(color='#f0f6fc', width=1.5),
+            marker=dict(
+                size=6,
+                color=['#3fb950' if r == 1 else '#f85149' for r in results],
+                symbol=['circle' if r == 1 else 'x' for r in results]
+            )
         ))
 
     fig.update_layout(
-        title="🛰️ Real-Time Waterfall Spectrogram & Trajectory Overlay",
-        xaxis_title="Time Slot (t)",
-        yaxis_title="Frequency Band",
-        template="plotly_dark",
-        height=450,
-        margin=dict(l=20, r=20, t=50, b=40)
+        title=dict(text="Spectrum Waterfall & Receiver Track", font=dict(size=14, color="#f0f6fc")),
+        xaxis=dict(title="Time Slot (t)", gridcolor="#21262d", zeroline=False),
+        yaxis=dict(title="Frequency Band", gridcolor="#21262d", zeroline=False),
+        paper_bgcolor="#161b22",
+        plot_bgcolor="#0d1117",
+        font=dict(color="#8b949e", size=11),
+        margin=dict(l=50, r=20, t=40, b=40),
+        height=380,
+        showlegend=False
     )
-
     return fig
 
 
-def plot_3d_spectrum_topology(env_power_grid, current_t, num_bands):
-    """Renders a 3D Surface Plot of Power Spectral Density (PSD)."""
-    active_power = env_power_grid[:current_t + 1, :num_bands]
+def plot_3d_spectrum_topology(power_grid_dbm, current_time, num_bands):
+    """Renders a 3D Surface Plot of the RF spectrum."""
+    time_window = min(current_time + 1, 50)
+    start_t = max(0, current_time + 1 - time_window)
     
-    x_time = np.arange(current_t + 1)
-    y_bands = np.arange(num_bands) + 1
+    z_data = power_grid_dbm[start_t:current_time+1, :]
+    x_data = [f"B{i+1}" for i in range(num_bands)]
+    y_data = list(range(start_t, current_time + 1))
 
-    fig = go.Figure(data=[
-        go.Surface(
-            z=active_power.T,
-            x=x_time,
-            y=y_bands,
-            colorscale='Thermal',
-            colorbar=dict(title="PSD (dBm)")
-        )
-    ])
+    fig = go.Figure(data=[go.Surface(
+        z=z_data,
+        x=x_data,
+        y=y_data,
+        colorscale="Viridis",
+        showscale=False
+    )])
 
     fig.update_layout(
-        title="🌐 3D Spectral Power Topology",
+        title=dict(text="3D Power Spectral Density Surface", font=dict(size=14, color="#f0f6fc")),
         scene=dict(
-            xaxis_title="Time Slot (t)",
-            yaxis_title="Frequency Band (B)",
-            zaxis_title="Power (dBm)",
-            camera=dict(eye=dict(x=-1.5, y=-1.5, z=1.2))
+            xaxis=dict(title="Band", backgroundcolor="#0d1117", gridcolor="#21262d"),
+            yaxis=dict(title="Time", backgroundcolor="#0d1117", gridcolor="#21262d"),
+            zaxis=dict(title="Power (dBm)", backgroundcolor="#0d1117", gridcolor="#21262d"),
         ),
-        template="plotly_dark",
-        height=500,
-        margin=dict(l=10, r=10, t=40, b=10)
+        paper_bgcolor="#161b22",
+        font=dict(color="#8b949e", size=10),
+        margin=dict(l=10, r=10, t=40, b=10),
+        height=400
     )
-
     return fig
 
 
-def render_emitter_classifier_card(current_band, hit_power_dbm, is_hit, history):
-    """Classifies intercepted signals in real time based on PSD and temporal history."""
+def render_emitter_classifier_card(current_band, current_power, is_hit, history):
+    """Renders a simple, clean signal classification status block."""
     if not is_hit:
-        st.sidebar.markdown("""
-            <div class="tactical-card">
-                <div class="tactical-title">Emitter Classification</div>
-                <div class="tactical-value" style="color: #666;">NO SIGNAL DETECTED</div>
-            </div>
-        """, unsafe_allow_html=True)
-        return
-
-    recent_band_hits = [
-        h['result'] for h in history[-10:] if h['band'] == current_band
-    ]
-    persistence_ratio = sum(recent_band_hits) / max(1, len(recent_band_hits))
-
-    if hit_power_dbm > -45.0 and persistence_ratio > 0.6:
-        emitter_type = "Search / Track Radar"
-        badge_class = "badge-radar"
-        confidence = 94.2
-    elif hit_power_dbm > -65.0 and persistence_ratio > 0.8:
-        emitter_type = "Active ECM Jammer"
-        badge_class = "badge-jammer"
-        confidence = 98.7
-    elif hit_power_dbm > -75.0 and persistence_ratio < 0.4:
-        emitter_type = "FHSS Tactical Radio"
-        badge_class = "badge-fhss"
-        confidence = 88.5
-    elif hit_power_dbm > -85.0:
-        emitter_type = "Tactical Burst Comms"
-        badge_class = "badge-burst"
-        confidence = 82.1
+        classification = "No Signal Detected"
+        status_color = "#8b949e"
     else:
-        emitter_type = "Unknown Transmission"
-        badge_class = "badge-unknown"
-        confidence = 55.0
+        if current_power > -60.0:
+            classification = "High-Power Pulse / Radar"
+            status_color = "#f85149"
+        elif current_power > -75.0:
+            classification = "Tactical Comms / FHSS"
+            status_color = "#58a6ff"
+        else:
+            classification = "Low-Power / Noise Floor"
+            status_color = "#d29922"
 
-    st.sidebar.markdown(f"""
-        <div class="tactical-card">
-            <div class="tactical-title">🎯 Intercepted Signal Classification</div>
-            <div class="tactical-value">
-                <span class="status-badge {badge_class}">{emitter_type}</span>
+    st.markdown(f"""
+        <div class="info-card">
+            <div class="info-card-title">Active Tuned Channel Target</div>
+            <div class="info-card-value" style="color: {status_color};">
+                Band {current_band + 1} &mdash; {classification}
             </div>
-            <div style="margin-top: 8px; font-size: 0.8rem; color: #aaa;">
-                <b>Target Band:</b> B{current_band + 1}<br>
-                <b>Received PSD:</b> {hit_power_dbm:.1f} dBm<br>
-                <b>Classifier Confidence:</b> {confidence}%
+            <div style="font-size: 0.8rem; color: #8b949e; margin-top: 4px;">
+                Signal Strength: {current_power:.1f} dBm
             </div>
         </div>
     """, unsafe_allow_html=True)
