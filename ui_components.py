@@ -122,8 +122,8 @@ def inject_tactical_css():
     """, unsafe_allow_html=True)
 
 
-def plot_waterfall_spectrogram(power_grid_dbm, scan_history, current_time, num_bands):
-    """Renders a clean 2D Spectrogram with receiver scan path overlay."""
+def plot_waterfall_spectrogram(power_grid_dbm, scan_history, current_time, num_bands, seq_history=None):
+    """Renders a clean 2D Spectrogram with receiver scan path overlay(s)."""
     fig = go.Figure()
 
     # Power Spectral Density Heatmap
@@ -136,7 +136,7 @@ def plot_waterfall_spectrogram(power_grid_dbm, scan_history, current_time, num_b
         showscale=True
     ))
 
-    # Overlay Receiver Path
+    # Overlay Primary (SmartScan) Receiver Path
     if scan_history:
         times = [record['time'] for record in scan_history]
         bands = [f"B{record['band']+1}" for record in scan_history]
@@ -146,13 +146,27 @@ def plot_waterfall_spectrogram(power_grid_dbm, scan_history, current_time, num_b
             x=times,
             y=bands,
             mode='lines+markers',
-            name='Receiver Tune',
+            name='SmartScan Tune',
             line=dict(color='#f0f6fc', width=1.5),
             marker=dict(
                 size=6,
                 color=['#3fb950' if r == 1 else '#f85149' for r in results],
                 symbol=['circle' if r == 1 else 'x' for r in results]
             )
+        ))
+
+    # Optional Overlay: Baseline (e.g. Sequential Sweep) Receiver Path
+    if seq_history:
+        times = [record['time'] for record in seq_history]
+        bands = [f"B{record['band']+1}" for record in seq_history]
+
+        fig.add_trace(go.Scatter(
+            x=times,
+            y=bands,
+            mode='lines',
+            name='Baseline Sweep',
+            line=dict(color='#d29922', width=1, dash='dot'),
+            opacity=0.6
         ))
 
     fig.update_layout(
@@ -164,7 +178,8 @@ def plot_waterfall_spectrogram(power_grid_dbm, scan_history, current_time, num_b
         font=dict(color="#8b949e", size=11),
         margin=dict(l=50, r=20, t=40, b=40),
         height=380,
-        showlegend=False
+        showlegend=bool(seq_history),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     return fig
 
@@ -228,3 +243,199 @@ def render_emitter_classifier_card(current_band, current_power, is_hit, history)
             </div>
         </div>
     """, unsafe_allow_html=True)
+
+
+# ==========================================
+# ADDITIONAL UI COMPONENTS (previously missing — caused ImportError)
+# ==========================================
+
+def render_pipeline_diagram():
+    """Renders a simple card-based view of the system processing pipeline."""
+    stages = [
+        ("📡", "RF Environment", "Synthesizes radar, FHSS, and burst emitters plus jammer + fading + AWGN."),
+        ("🧠", "D3QN + LSTM Predictor", "Learns hop patterns from recent spectrum history to predict the next active band."),
+        ("🎯", "Scheduler / Receiver", "Tunes the virtual receiver to the predicted band each time slot."),
+        ("📊", "Telemetry & Analytics", "Logs hits/misses, Pd, and power to drive live dashboards and CSV export."),
+    ]
+    cols = st.columns(len(stages))
+    for col, (icon, title, desc) in zip(cols, stages):
+        with col:
+            st.markdown(f"""
+                <div class="pipeline-card">
+                    <div class="pipeline-title">{icon} {title}</div>
+                    <div class="pipeline-desc">{desc}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+
+def render_emitter_legend():
+    """Renders a legend describing each emitter / threat type and its visual cue."""
+    legend_items = [
+        ("Radar_Chirp", "#f85149", "High-power periodic pulse train (search/track radar)."),
+        ("FHSS", "#58a6ff", "Fast pseudo-random frequency-hopping tactical comms."),
+        ("Burst_Comms", "#d29922", "Low duty-cycle, short unpredictable comm bursts."),
+        ("Jammer (ECM)", "#a371f7", "Adversarial interference: SWEEP, BARRAGE, or REACTIVE_SPOOF."),
+    ]
+    cols = st.columns(len(legend_items))
+    for col, (name, color, desc) in zip(cols, legend_items):
+        with col:
+            st.markdown(f"""
+                <div class="legend-card">
+                    <div class="legend-title">
+                        <span style="width:10px;height:10px;border-radius:50%;background:{color};display:inline-block;"></span>
+                        {name}
+                    </div>
+                    <div class="legend-desc">{desc}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+
+def plot_band_activity_histogram(history, num_bands):
+    """Bar chart of how many times each band was tuned vs. hit."""
+    tuned_counts = np.zeros(num_bands, dtype=int)
+    hit_counts = np.zeros(num_bands, dtype=int)
+
+    for record in history:
+        b = record['band']
+        if 0 <= b < num_bands:
+            tuned_counts[b] += 1
+            if record.get('result', 0):
+                hit_counts[b] += 1
+
+    band_labels = [f"B{i+1}" for i in range(num_bands)]
+
+    fig = go.Figure(data=[
+        go.Bar(name='Tuned', x=band_labels, y=tuned_counts, marker_color='#58a6ff'),
+        go.Bar(name='Intercepted', x=band_labels, y=hit_counts, marker_color='#3fb950'),
+    ])
+    fig.update_layout(
+        barmode='overlay',
+        title=dict(text="Band Tuning / Intercept Distribution", font=dict(size=14, color="#f0f6fc")),
+        xaxis=dict(title="Band", gridcolor="#21262d"),
+        yaxis=dict(title="Count", gridcolor="#21262d"),
+        paper_bgcolor="#161b22",
+        plot_bgcolor="#0d1117",
+        font=dict(color="#8b949e", size=11),
+        height=360,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    return fig
+
+
+def plot_polar_band_activity(history, num_bands):
+    """Polar bar chart showing intercept density spread across bands."""
+    hit_counts = np.zeros(num_bands, dtype=int)
+    for record in history:
+        b = record['band']
+        if 0 <= b < num_bands and record.get('result', 0):
+            hit_counts[b] += 1
+
+    band_labels = [f"B{i+1}" for i in range(num_bands)]
+
+    fig = go.Figure(data=[
+        go.Barpolar(
+            r=hit_counts,
+            theta=band_labels,
+            marker_color=hit_counts,
+            marker_colorscale="Viridis",
+            opacity=0.85
+        )
+    ])
+    fig.update_layout(
+        title=dict(text="Polar Intercept Density", font=dict(size=14, color="#f0f6fc")),
+        polar=dict(
+            bgcolor="#0d1117",
+            radialaxis=dict(color="#8b949e", gridcolor="#21262d"),
+            angularaxis=dict(color="#8b949e", gridcolor="#21262d")
+        ),
+        paper_bgcolor="#161b22",
+        font=dict(color="#8b949e", size=10),
+        height=360,
+        showlegend=False
+    )
+    return fig
+
+
+def plot_power_trend(history):
+    """Line chart of received signal power over time for the primary receiver."""
+    times = [r['time'] for r in history]
+    powers = [r.get('power', np.nan) for r in history]
+    results = [r.get('result', 0) for r in history]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=times,
+        y=powers,
+        mode='lines',
+        name='Receiver Power',
+        line=dict(color='#58a6ff', width=1.5)
+    ))
+    hit_times = [t for t, r in zip(times, results) if r]
+    hit_powers = [p for p, r in zip(powers, results) if r]
+    if hit_times:
+        fig.add_trace(go.Scatter(
+            x=hit_times,
+            y=hit_powers,
+            mode='markers',
+            name='Intercept',
+            marker=dict(color='#3fb950', size=7, symbol='circle')
+        ))
+
+    fig.update_layout(
+        title=dict(text="Receiver Power Trend", font=dict(size=14, color="#f0f6fc")),
+        xaxis=dict(title="Time Slot (t)", gridcolor="#21262d"),
+        yaxis=dict(title="Power (dBm)", gridcolor="#21262d"),
+        paper_bgcolor="#161b22",
+        plot_bgcolor="#0d1117",
+        font=dict(color="#8b949e", size=11),
+        height=360,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    return fig
+
+
+def render_console_log(lines, max_lines=200):
+    """Renders a scrollable, terminal-style console log."""
+    display_lines = lines[-max_lines:]
+    log_html = "<br>".join(display_lines)
+    st.markdown(f"""
+        <div style="
+            background-color: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 6px;
+            padding: 12px 14px;
+            height: 220px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: #8b949e;
+            line-height: 1.6;
+        ">
+            {log_html}
+        </div>
+    """, unsafe_allow_html=True)
+
+
+def render_mission_summary(d3qn_hits, seq_hits, rand_hits, pd_d3qn, pd_seq, pd_rand):
+    """Renders end-of-run summary cards comparing all three schedulers."""
+    col1, col2, col3 = st.columns(3)
+
+    rows = [
+        (col1, "SmartScan D3QN+LSTM", d3qn_hits, pd_d3qn, "#3fb950"),
+        (col2, "Sequential Sweep", seq_hits, pd_seq, "#f85149"),
+        (col3, "Random Scan", rand_hits, pd_rand, "#d29922"),
+    ]
+
+    for col, label, hits, pd_val, color in rows:
+        with col:
+            st.markdown(f"""
+                <div class="info-card">
+                    <div class="info-card-title">{label}</div>
+                    <div class="info-card-value" style="color: {color};">
+                        {hits} Intercepts
+                    </div>
+                    <div style="font-size: 0.8rem; color: #8b949e; margin-top: 4px;">
+                        Pd: {pd_val:.1f}%
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
