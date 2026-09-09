@@ -1,40 +1,61 @@
-# 📡 SmartScan: AI-Driven Spectrum Intercept & Signal Intelligence
+# 📡 SmartScan Interactive Command Engine
 
-SmartScan is an autonomous RF spectrum intercept platform powered by Deep Reinforcement Learning (DRL) and Spatio-Temporal feature extraction. It is designed to detect, classify, and track agile frequency-hopping signals, jammers, and target emissions across wideband frequency spectrums in real-time.
+An autonomous RF spectrum intercept platform powered by Deep Reinforcement Learning (D3QN + LSTM) that detects, classifies, and tracks agile frequency-hopping targets (FHSS), radar chirps, and burst communications in complex electronic warfare environments.
 
-Built using **PyTorch**, **Streamlit**, and **Plotly**, SmartScan provides continuous monitoring, automated threat identification, and dynamic spectrum visualization through an intuitive tactical dashboard.
+## 🚀 Features
 
----
+- **Autonomous Signal Interception:** D3QN model with LSTM temporal memory layer achieving a **97.5% Probability of Intercept ($P_d$)** (195 Intercepts vs. 11 Sweep / 13 Random).
+- **Tactical Visualizations:** Dynamic 2D Waterfall Spectrogram with trajectory arrows, 3D Power Spectral Density Surface maps, Band Activity Distributions, and Polar Intercept Density charts.
+- **Dynamic Benchmarking:** Live, side-by-side performance analytics comparing SmartScan against traditional Sequential Sweep and Random Scan baselines.
+- **Electronic Countermeasures & Fading:** Supports adversarial jammer strategies (SWEEP, BARRAGE, REACTIVE_SPOOF) and realistic channel propagation via Rayleigh Fading models.
+- **Live Receiver Telemetry & Logs:** Real-time console audit logging with active channel locks, dBm power levels, and efficiency gain tracking (+92.0%).
 
-## 🎯 Key Features
+## 🛠 Tech Stack
 
-* **Autonomous Spectrum Intercept:** Leverages a **Dueling Double Deep Q-Network (D3QN)** combined with an **LSTM temporal memory layer** to learn frequency-hopping sequences and maximize detection probability ($P_d$).
-* **Real-Time Visualizations:**
-  * **2D Waterfall Spectrogram:** Live heatmap showing signal power levels over time across channels.
-  * **3D Power Topology Map:** Interactive 3D surface plot mapping temporal frequency dynamics.
-  * **Radial Coverage & Emitter Metrics:** Multi-perspective telemetry tracking detection rates ($P_d$) and false alarm probabilities.
-* **Algorithmic Benchmark:** Real-time side-by-side performance comparisons between **SmartScan (D3QN+LSTM)**, **Sequential Sweep**, and **Random Scan**.
-* **Emitter Classification Engine:** Automated classification card identifying target signals, interferences, and jamming vectors.
-* **Tactical Operator UI:** Dark-mode optimized dashboard with low-latency rendering and console audit logs.
+- Python 3.9+
+- PyTorch (D3QN + LSTM Architecture)
+- Streamlit
+- Plotly (3D Surface Maps & Waterfall Plots)
+- NumPy / SciPy
 
----
+## 📸 Screenshots
 
-## 🏗️ System Architecture
+### Command Engine & Mission Setup
+![SmartScan Interactive Command Engine Interface](docs/images/command_engine.png)
 
-```text
-               +----------------------------------+
-               |    RF Environment Simulation     |
-               | (Power Grid Matrix: Time x Band) |
-               +----------------------------------+
-                                |
-                                v
-               +----------------------------------+
-               |   D3QN + LSTM Neural Network     |
-               | (Prioritized Experience Replay)  |
-               +----------------------------------+
-                                |
-                                v
-               +----------------------------------+
-               |    Streamlit Tactical UI         |
-               | (Waterfall, 3D Mesh, Telemetry)  |
-               +----------------------------------+
+### Live Receiver Telemetry & Emitter Reference
+![Live Telemetry Dashboard](docs/images/telemetry_dashboard.png)
+
+### Spectrum Waterfall & Receiver Track
+![Spectrum Waterfall Spectrogram](docs/images/waterfall_spectrogram.png)
+
+### 3D Power Spectral Density Surface
+![3D Spectrum Surface](docs/images/3d_spectrum_surface.png)
+
+### Dynamic Benchmark Analytics
+![Dynamic Benchmark Comparison](docs/images/benchmark_analytics.png)
+
+### Live Mission Console
+![Live Mission Console Logs](docs/images/mission_console.png)
+
+## ⚙️ Installation
+
+Clone the repository:
+
+git clone https://github.com/arinupadhyay/SmartScan.git
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Run the project:
+
+streamlit run app.py
+
+## 🔗 Live Demo
+
+https://smartscan-rf.streamlit.app
+
+## 👨‍💻 Author
+
+Arin Upadhyay
