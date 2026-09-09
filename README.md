@@ -54,7 +54,7 @@ streamlit run app.py
 
 ## 🔗 Live Demo
 
-https://smartscan-rf.streamlit.app
+[https://smartscan-rf.streamlit.app](https://smartscan-defense.streamlit.app/)
 
 ## 👨‍💻 Author
 
